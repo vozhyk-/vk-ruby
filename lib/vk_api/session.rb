@@ -6,9 +6,9 @@
 # Copyright:: Copyright (c) 2011- Nikolay Karev
 # License:: MIT License (http://www.opensource.org/licenses/mit-license.php)
 #
-# Библиотека VK имеет один класс - +::VK:Session+. После создания экземпляра сессии
+# Библиотека VkApi имеет один класс - +::VK:Session+. После создания экземпляра сессии
 # вы можете вызывать методы ВКонтакте как будто это методы сессии, например:
-#   session = ::VK::Session.new app_id, api_secret
+#   session = ::VkApi::Session.new app_id, api_secret
 #   session.friends.get :uid => 12
 # Такой вызов вернёт вам массив хэшей в виде:
 #   # => [{'uid' => '123'}, {:uid => '321'}]
@@ -18,7 +18,7 @@ require 'uri'
 require 'digest/md5'
 require 'json'
 
-module VK
+module VkApi
   # Единственный класс библиотеки, работает как "соединение" с сервером ВКонтакте.
   # Постоянное соединение с сервером не устанавливается, поэтому необходимости в явном
   # отключении от сервера нет.
@@ -47,7 +47,10 @@ module VK
       params[:method] = @prefix ? "#{@prefix}.#{method}" : method
       params[:api_id] = app_id
       params[:format] = 'json'
-      params[:sig] = sig params.stringify_keys
+      params[:sig] = sig(params.tap do |s|
+        # stringify keys
+        s.keys.each {|k| s[k.to_s] = s.delete k  }
+      end)
       response = JSON.parse(Net::HTTP.post_form(URI.parse(VK_API_URL), params).body)      
       raise ServerError.new self, method, params, response['error'] if response['error']
       response['response']
@@ -64,10 +67,10 @@ module VK
     # Генерирует методы, необходимые для делегирования методов ВКонтакте, так friends, 
     # images
     def self.add_method method
-      ::VK::Session.class_eval do 
+      ::VkApi::Session.class_eval do 
         define_method method do 
           if (! var = instance_variable_get("@#{method}"))
-            instance_variable_set("@#{method}", var = ::VK::Session.new(app_id, api_secret, method))
+            instance_variable_set("@#{method}", var = ::VkApi::Session.new(app_id, api_secret, method))
           end
           var
         end
