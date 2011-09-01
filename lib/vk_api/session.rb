@@ -17,6 +17,7 @@ require 'net/http'
 require 'uri'
 require 'digest/md5'
 require 'json'
+require 'active_support/inflector'
 
 module VkApi
   # Единственный класс библиотеки, работает как "соединение" с сервером ВКонтакте.
@@ -44,6 +45,7 @@ module VkApi
     # Возвращаемое значение: хэш с результатами вызова.
     # Генерируемые исключения: +ServerError+ если сервер ВКонтакте вернул ошибку.
     def call(method, params = {})
+      method = method.to_s.camelize(:lower)
       params[:method] = @prefix ? "#{@prefix}.#{method}" : method
       params[:api_id] = app_id
       params[:format] = 'json'
