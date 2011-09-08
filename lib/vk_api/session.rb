@@ -17,6 +17,7 @@ require 'net/http'
 require 'uri'
 require 'digest/md5'
 require 'json'
+require 'active_support/inflector'
 
 module VkApi
   # Единственный класс библиотеки, работает как "соединение" с сервером ВКонтакте.
@@ -27,7 +28,7 @@ module VkApi
   class Session
     VK_API_URL = 'http://api.vk.com/api.php'
     VK_OBJECTS = %w(friends photos wall audio video places secure language notes pages offers 
-      questions messages newsfeed status polls subscriptions)
+      questions messages newsfeed status polls subscriptions likes)
     attr_accessor :app_id, :api_secret
 
     # Конструктор. Получает следующие аргументы:
@@ -44,6 +45,7 @@ module VkApi
     # Возвращаемое значение: хэш с результатами вызова.
     # Генерируемые исключения: +ServerError+ если сервер ВКонтакте вернул ошибку.
     def call(method, params = {})
+      method = method.to_s.camelize(:lower)
       params[:method] = @prefix ? "#{@prefix}.#{method}" : method
       params[:api_id] = app_id
       params[:format] = 'json'
