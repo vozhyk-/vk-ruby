@@ -27,7 +27,7 @@ module VkApi
   # путём делегирования запросов.
   class Session
     VK_API_URL = 'http://api.vk.com/api.php'
-    VK_OBJECTS = %w(friends photos wall audio video places secure language notes pages offers 
+    VK_OBJECTS = %w(users friends photos wall audio video places secure language notes pages offers
       questions messages newsfeed status polls subscriptions likes)
     attr_accessor :app_id, :api_secret
 
