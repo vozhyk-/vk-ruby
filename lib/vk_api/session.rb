@@ -26,7 +26,7 @@ module VkApi
   # Экземпляр +Session+ может обрабатывать все методы, поддерживаемые API ВКонтакте
   # путём делегирования запросов.
   class Session
-    VK_API_URL = 'http://api.vk.com/api.php'
+    VK_API_URL = 'https://api.vk.com'
     VK_OBJECTS = %w(users friends photos wall audio video places secure language notes pages offers
       questions messages newsfeed status polls subscriptions likes)
     attr_accessor :app_id, :api_secret
@@ -46,31 +46,45 @@ module VkApi
     # Генерируемые исключения: +ServerError+ если сервер ВКонтакте вернул ошибку.
     def call(method, params = {})
       method = method.to_s.camelize(:lower)
-      params[:method] = @prefix ? "#{@prefix}.#{method}" : method
+      method = @prefix ? "#{@prefix}.#{method}" : method
+      params[:method] = method
       params[:api_id] = app_id
       params[:format] = 'json'
       params[:sig] = sig(params.tap do |s|
         # stringify keys
         s.keys.each {|k| s[k.to_s] = s.delete k  }
       end)
-      response = JSON.parse(Net::HTTP.post_form(URI.parse(VK_API_URL), params).body)      
+
+      # http://vk.com/developers.php?oid=-1&p=%D0%92%D1%8B%D0%BF%D0%BE%D0%BB%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5_%D0%B7%D0%B0%D0%BF%D1%80%D0%BE%D1%81%D0%BE%D0%B2_%D0%BA_API
+      # now VK requires the following url: https://api.vk.com/method/METHOD_NAME
+      path = VK_API_URL + "/method/#{method.gsub('.', '')}"
+      uri = URI.parse(path)
+
+      # build Post request to VK (using https)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      request = Net::HTTP::Post.new(uri.request_uri)
+      request.set_form_data(params)
+
+      response = JSON.parse(http.request(request).body)
+
       raise ServerError.new self, method, params, response['error'] if response['error']
       response['response']
     end
-    
+
     # Генерирует подпись запроса
     # * params: параметры запроса
     def sig(params)
       Digest::MD5::hexdigest(
-      params.keys.sort.map{|key| "#{key}=#{params[key]}"}.join + 
-      api_secret) 
+      params.keys.sort.map{|key| "#{key}=#{params[key]}"}.join +
+      api_secret)
     end
 
-    # Генерирует методы, необходимые для делегирования методов ВКонтакте, так friends, 
+    # Генерирует методы, необходимые для делегирования методов ВКонтакте, так friends,
     # images
     def self.add_method method
-      ::VkApi::Session.class_eval do 
-        define_method method do 
+      ::VkApi::Session.class_eval do
+        define_method method do
           if (! var = instance_variable_get("@#{method}"))
             instance_variable_set("@#{method}", var = ::VkApi::Session.new(app_id, api_secret, method))
           end
@@ -82,17 +96,17 @@ module VkApi
     for method in VK_OBJECTS
       add_method method
     end
-    
+
     # Перехват неизвестных методов для делегирования серверу ВКонтакте
     def method_missing(name, *args)
       call name, *args
     end
 
   end
-  
+
   # Базовый класс ошибок
   class Error < ::StandardError; end
-  
+
   # Ошибка на серверной стороне
   class ServerError < Error
     attr_accessor :session, :method, :params, :error
@@ -101,5 +115,5 @@ module VkApi
       @session, @method, @params, @error = session, method, params, error
     end
   end
-  
+
 end
