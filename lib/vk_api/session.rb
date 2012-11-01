@@ -104,11 +104,8 @@ module VkApi
 
   end
 
-  # Базовый класс ошибок
-  class Error < ::StandardError; end
-
   # Ошибка на серверной стороне
-  class ServerError < Error
+  class ServerError < StandardError
     attr_accessor :session, :method, :params, :error
     def initialize(session, method, params, error)
       super "Server side error calling VK method: #{error}"
