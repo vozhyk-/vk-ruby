@@ -4,7 +4,7 @@
 
 Библиотека VkApi имеет один значимый класс - <tt>VK:Session</tt>. После создания экземпляра сессии
 вы можете вызывать методы ВКонтакте как будто это методы сессии, например:
-  session = ::VkApi::Session.new app_id, api_secret
+  session = ::VkApi::Session.new app_id, api_access_token
   session.friends.get :uid => 12
 Такой вызов вернёт вам массив хэшей в виде:
   => [{'uid' => '123'}, {:uid => '321'}]
