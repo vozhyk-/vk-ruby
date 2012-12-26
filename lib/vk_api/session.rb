@@ -38,6 +38,18 @@ module VkApi
       @app_id, @api_secret, @prefix = app_id, api_secret, method_prefix
     end
 
+    # Post request using https
+    # from net/http.rb, line 478, modified
+    def ssl_post_form(url, params)
+      req = Net::HTTP::Post.new(url.request_uri)
+      req.form_data = params
+      req.basic_auth url.user, url.password if url.user
+      http = Net::HTTP.new(url.hostname, url.port)
+      http.use_ssl = true
+      http.start {|http|
+        http.request(req)
+      }
+    end
 
     # Выполняет вызов API ВКонтакте
     # * method: Имя метода ВКонтакте, например friends.get
@@ -57,16 +69,9 @@ module VkApi
 
       # http://vk.com/developers.php?oid=-1&p=%D0%92%D1%8B%D0%BF%D0%BE%D0%BB%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5_%D0%B7%D0%B0%D0%BF%D1%80%D0%BE%D1%81%D0%BE%D0%B2_%D0%BA_API
       # now VK requires the following url: https://api.vk.com/method/METHOD_NAME
-      path = VK_API_URL + "/method/#{method.gsub('.', '')}"
-      uri = URI.parse(path)
+      uri = URI.parse(VK_API_URL + "/method/" + method)
 
-      # build Post request to VK (using https)
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = true
-      request = Net::HTTP::Post.new(uri.request_uri)
-      request.set_form_data(params)
-
-      response = JSON.parse(http.request(request).body)
+      response = JSON.parse(ssl_post_form(uri, params).body)
 
       raise ServerError.new self, method, params, response['error'] if response['error']
       response['response']
