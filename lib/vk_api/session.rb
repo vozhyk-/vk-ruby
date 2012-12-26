@@ -35,6 +35,9 @@ module VkApi
     # * app_id: ID приложения ВКонтакте.
     # * api_access_token: access_token, полученный из https://oauth.vk.com/authorize?client_id=##APP_ID##&redirect_uri=http://api.vk.com/blank.html&scope=##PERMISSIONS##&display=page&response_type=token
     def initialize app_id, api_access_token, method_prefix = nil
+      unless api_access_token.is_a? String
+        raise ArgumentError, 'api_access_token must be a String'
+      end
       @app_id, @api_access_token, @prefix = app_id, api_access_token, method_prefix
     end
 
