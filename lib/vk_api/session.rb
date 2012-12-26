@@ -61,6 +61,7 @@ module VkApi
       method = @prefix ? "#{@prefix}.#{method}" : method
       params[:method] = method
       params[:api_id] = app_id
+      params[:access_token] = api_secret
       params[:format] = 'json'
       params[:sig] = sig(params.tap do |s|
         # stringify keys
