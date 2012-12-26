@@ -59,14 +59,7 @@ module VkApi
     def call(method, params = {})
       method = method.to_s.camelize(:lower)
       method = @prefix ? "#{@prefix}.#{method}" : method
-      params[:method] = method
-      params[:api_id] = app_id
       params[:access_token] = api_secret
-      params[:format] = 'json'
-      params[:sig] = sig(params.tap do |s|
-        # stringify keys
-        s.keys.each {|k| s[k.to_s] = s.delete k  }
-      end)
 
       # http://vk.com/developers.php?oid=-1&p=%D0%92%D1%8B%D0%BF%D0%BE%D0%BB%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5_%D0%B7%D0%B0%D0%BF%D1%80%D0%BE%D1%81%D0%BE%D0%B2_%D0%BA_API
       # now VK requires the following url: https://api.vk.com/method/METHOD_NAME
@@ -76,14 +69,6 @@ module VkApi
 
       raise ServerError.new self, method, params, response['error'] if response['error']
       response['response']
-    end
-
-    # Генерирует подпись запроса
-    # * params: параметры запроса
-    def sig(params)
-      Digest::MD5::hexdigest(
-      params.keys.sort.map{|key| "#{key}=#{params[key]}"}.join +
-      api_secret)
     end
 
     # Генерирует методы, необходимые для делегирования методов ВКонтакте, так friends,
